@@ -122,3 +122,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+dataCUS/
+
+pollos/
+
+*.h5
+
+*.npy
+
+*.v2
+
+*.trace
+
+*.profile-empty
