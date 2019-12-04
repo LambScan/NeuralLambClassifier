@@ -103,7 +103,7 @@ print("Keras version: " + V + str(keras.__version__) + B, end='\n\n\n')
 
 # --------------------------------- PARAMETROS ---------------------------------
 
-ID_MODELO = 8
+ID_MODELO = 9
 USAR_GENERADORES = True
 
 

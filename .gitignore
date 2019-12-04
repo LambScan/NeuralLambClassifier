@@ -136,3 +136,5 @@ pollos/
 *.trace
 
 *.profile-empty
+
+.idea/

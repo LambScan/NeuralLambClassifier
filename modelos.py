@@ -423,7 +423,7 @@ def M6():
 
     model.add(layers.Conv2D(128, kernel_size=kernel_size_3, activation='relu'))
     model.add(layers.MaxPooling2D(pool_size=pool_size_2))
-
+     
     model.add(layers.Flatten())
     model.add(layers.Dense(500, activation='relu'))
     model.add(layers.Dropout(0.4))
@@ -474,12 +474,10 @@ def M7():
 
 ###################################################################       ###################################################################
 ###################################################################   8   ###################################################################
-###################################################################       ###################################################################
+###################################################################       ######BUENA########################################################
 
 def M8():
     model = models.Sequential()
-
-    distribucion = keras.initializers.he_normal(seed=None)
 
 
     #VGG16 like
@@ -492,26 +490,64 @@ def M8():
     model.add(layers.AveragePooling2D(pool_size=pool_size_2))
     model.add(layers.BatchNormalization())
 
-    model.add(layers.Conv2D(128, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.Conv2D(32, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_5, activation='relu'))
     model.add(layers.AveragePooling2D(pool_size=pool_size_2))
     model.add(layers.BatchNormalization())
 
     model.add(layers.Conv2D(128, kernel_size=kernel_size_3, activation='relu'))
-    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
-    model.add(layers.BatchNormalization())
-
-    model.add(layers.Conv2D(256, kernel_size=kernel_size_3, activation='relu'))
     model.add(layers.MaxPooling2D(pool_size=pool_size_2))
 
     model.add(layers.Flatten())
-    model.add(layers.Dense(500, activation='relu'))
-    model.add(layers.Dropout(0.4))
+    model.add(layers.Dense(200, activation='relu'))
+    model.add(layers.Dropout(0.5))
     model.add(layers.Dense(3, activation='softmax'))
 
     return model
 
 
+###################################################################       ###################################################################
+###################################################################   9   ###################################################################
+###################################################################       ###################################################################
+
+def M9():
+    model = models.Sequential()
+
+
+    #VGG16 like
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3,input_shape=(230, 510, 1) , activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_5, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(128, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.MaxPooling2D(pool_size=pool_size_2))
+
+    model.add(layers.Flatten())
+    model.add(layers.Dense(200, activation='relu'))
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(30, activation='relu'))
+    model.add(layers.Dropout(0.4))
+    model.add(layers.Dense(3, activation='softmax'))
+
+    return model
+
 ############################################################   lista de modelos   ############################################################
 
 
-listaFunciones = [M0,M1,M2,M3,M4,M5,M6,M7,M8]
+listaFunciones = [M0,M1,M2,M3,M4,M5,M6,M7,M8,M9]
