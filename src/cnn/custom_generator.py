@@ -11,7 +11,7 @@ import os
 class My_Custom_Generator(Sequence):
     """ Custom generator. """
 
-    def __init__(self, parent_folder, image_filenames, labels, batch_size, use_shuffle=True):
+    def __init__(self, parent_folder, image_filenames, labels, batch_size, target_size, use_shuffle=True):
         if use_shuffle:
             seed = np.random.randint(1000000)
             self.image_filenames = shuffle(image_filenames, random_state=seed)
@@ -21,6 +21,7 @@ class My_Custom_Generator(Sequence):
             self.labels = labels
         self.batch_size = batch_size
         self.parent_folder = parent_folder
+        self.target_size = target_size
         self.transforms = []
 
     def add_transform(self, func):
@@ -43,10 +44,10 @@ class My_Custom_Generator(Sequence):
 
         for ind, file_name in enumerate(batch_x):
             img = cv2.imread(os.path.join(self.parent_folder, str(file_name) + ".png"), cv2.IMREAD_ANYDEPTH)
-            xRet.append(img.reshape(230, 510, 1))
+            xRet.append(img.reshape(self.target_size))
             yRet.append(batch_y[ind])
             for t in self.transforms:
-                xRet.append(t(img).reshape(230, 510, 1))
+                xRet.append(t(img).reshape(self.target_size))
                 yRet.append(batch_y[ind])
 
         return np.array(xRet), np.array(yRet)

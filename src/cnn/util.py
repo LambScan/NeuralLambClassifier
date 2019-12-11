@@ -1,11 +1,13 @@
 import numpy as np
+from colored import fg
 
 
 
 
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+# ------------- PROGRESS BAR  -------------------------------------------------------------------
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", color=118):
     """
-    Call in a loop to create terminal progress bar.
+    Call in a loop to create terminal progress bar
     @params:
         iteration   - Required  : current iteration (Int)
         total       - Required  : total iterations (Int)
@@ -16,14 +18,15 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
+    if type(color) == int:
+        color = fg(color)
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
-    bar = V + fill * filledLength + B + "-" * (length - filledLength)
-    print("\r%s |%s|" % (prefix, bar) + V + "%s" % (percent) + B + "%% %s" % (suffix), end=printEnd)
+    bar = color + fill * filledLength + fg(15) + "-" * (length - filledLength)
+    print("\r%s |%s|" % (prefix, bar) + color + "%s" % percent + fg(15) + "%% %s" % suffix, end=printEnd)
     # Print New Line on Complete
     if iteration == total:
         print()
-
 
 
 

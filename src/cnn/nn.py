@@ -68,22 +68,28 @@ class Model_constructor():
         #paths
         self.parent_folder = parent_folder
 
-        self.label_numpy_path = os.path.join(self.parent_folder, "dataset", "dataCUS", "labels.npy")
-        self.data_path = os.path.join(self.parent_folder, "dataset", "dataCUS")
-
     def create_model(self):
         print(self.B + "Usando Modelo " + self.C + str(self.ID_MODELO) + self.B)
         return loadModels(self.ID_MODELO)
 
 
-    def compile_model(self, model):
-        adam = keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=True)
-        model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=["accuracy"])
-        return model
+    def compile_model(self, model, regression=False):
+        if regression:
+            adam = keras.optimizers.Adam(lr=self.learning_rate, decay=self.learning_rate / 200)
+            model.compile(loss="mean_absolute_percentage_error", optimizer=adam)
+            return model
+        else:
+            adam = keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=True)
+            model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=["accuracy"])
+            return model
 
 
-    def get_generators(self):
-        label_list = np.load(self.label_numpy_path, allow_pickle=True)
+    def get_generators(self, dataset_path, target_size, data_aumentation=True):
+        #path
+        label_numpy_path = os.path.join(dataset_path, "labels.npy")
+
+
+        label_list = np.load(label_numpy_path, allow_pickle=True)
         img_names_list = np.arange(0, len(label_list), 1)
 
         seed = np.random.randint(1000000)
@@ -97,15 +103,17 @@ class Model_constructor():
         val_labels = np.array(label_list[frontera:])
 
         # creamos los generadores
-        train_it = My_Custom_Generator(self.data_path, train_img_names, train_labels, self.loading_batch_size)
-        train_it.add_transform(lambda x: cv2.flip(x, 0))
-        train_it.add_transform(lambda x: cv2.flip(x, 1))
-        train_it.add_transform(lambda x: cv2.flip(x, -1))
+        train_it = My_Custom_Generator(dataset_path, train_img_names, train_labels, self.loading_batch_size, target_size)
+        if data_aumentation:
+            train_it.add_transform(lambda x: cv2.flip(x, 0))
+            train_it.add_transform(lambda x: cv2.flip(x, 1))
+            train_it.add_transform(lambda x: cv2.flip(x, -1))
 
-        val_it = My_Custom_Generator(self.data_path, val_img_names, val_labels, self.loading_batch_size)
-        val_it.add_transform(lambda x: cv2.flip(x, 0))
-        val_it.add_transform(lambda x: cv2.flip(x, 1))
-        val_it.add_transform(lambda x: cv2.flip(x, -1))
+        val_it = My_Custom_Generator(dataset_path, val_img_names, val_labels, self.loading_batch_size, target_size)
+        if data_aumentation:
+            val_it.add_transform(lambda x: cv2.flip(x, 0))
+            val_it.add_transform(lambda x: cv2.flip(x, 1))
+            val_it.add_transform(lambda x: cv2.flip(x, -1))
 
 
         self.num_train = train_img_names.size * (train_it.get_num_transform() + 1)
@@ -118,7 +126,10 @@ class Model_constructor():
 
 
     def get_dataset(self):
-        """ Devuelve un numpy con el dataset cargado en RAM. """
+        """
+         Devuelve un numpy con el dataset cargado en RAM.
+         El dataset debe componerse de .npy con [imagen,label]
+        """
         data_folder = os.path.join(self.parent_folder, "dataset", "dataNP")
 
         onlyfiles = [f for f in listdir(data_folder) if isfile(join(data_folder, f))]
@@ -175,7 +186,7 @@ class Model_constructor():
 
 
 
-    def fit_model(self, model, data_input, use_generators, use_tensorboard=False):
+    def fit_model(self, model, data_input, use_generators, use_tensorboard=False, regression=False, color=-1):
         print(self.B
               + "#############################################"
               + self.C + "    Entrenando la red    " + self.B
@@ -184,13 +195,24 @@ class Model_constructor():
         # Callbacks para el entrenamiento
 
 
-        calls = [
-            keras.callbacks.callbacks.EarlyStopping(monitor='val_accuracy', min_delta=0.01, patience=self.paciencia,
+        calls = []
+        if regression:
+            calls.append(keras.callbacks.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=self.paciencia,
                                                     verbose=0,
-                                                    mode='auto', baseline=None, restore_best_weights=True),
-            keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(np.random.randint(130, 232))),
+                                                    mode='auto', baseline=None, restore_best_weights=True))
+        else:
+            calls.append(keras.callbacks.callbacks.EarlyStopping(monitor='val_accuracy', min_delta=0.01, patience=self.paciencia,
+                                                    verbose=0,
+                                                    mode='auto', baseline=None, restore_best_weights=True))
+
+        if color == -1:
+            calls.append(keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(np.random.randint(130, 232))),
                                                      on_epoch_end=lambda e, l: print(fg(248)), on_batch_begin=None,
-                                                     on_batch_end=None, on_train_begin=None, on_train_end=None)]
+                                                     on_batch_end=None, on_train_begin=None, on_train_end=None))
+        elif color >= 0 and color < 256:
+            calls.append(keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(color)),
+                                                     on_epoch_end=lambda e, l: print(fg(248)), on_batch_begin=None,
+                                                     on_batch_end=None, on_train_begin=None, on_train_end=None))
 
         if use_tensorboard:
             board_path = os.path.join(self.parent_folder, "last_exec_data")
@@ -232,6 +254,34 @@ class Model_constructor():
 
         return history
 
+
+    def evaluate_regression_model(self, model, data_input):
+        """
+         todo: esta funcion no funciona si no se le pasa todo el dataset de validacion por parametros,
+         por lo que hay que adaptarla a usar los generadores.
+        """
+
+        testImagesX, testY = data_input
+
+        # make predictions on the testing data
+        print("[INFO] predicting...")
+        preds = model.predict(testImagesX)
+
+        # compute the difference between the *predicted* house prices and the
+        # *actual* house prices, then compute the percentage difference and
+        # the absolute percentage difference
+        diff = preds.flatten() - testY
+        percentDiff = (diff / testY) * 100
+        absPercentDiff = np.abs(percentDiff)
+
+        # compute the mean and standard deviation of the absolute percentage
+        # difference
+        mean = np.mean(absPercentDiff)
+        std = np.std(absPercentDiff)
+
+        # finally, show some statistics on our model
+        print("[INFO] mean: {:.2f}%, std: {:.2f}%".format(mean, std))
+        return mean, std
 
 
     def show_plot(self, history):

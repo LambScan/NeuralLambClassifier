@@ -13,7 +13,7 @@ parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(
 ################################################       PARAMETROS       ################################################
 
 
-ID_MODELO = 11
+ID_MODELO = 12
 
 epochs = 200
 batch_size = 1  # 2
@@ -47,7 +47,7 @@ parametros["paciencia"] = paciencia
 parametros["train_percent"] = train_percent
 
 colores = {}
-colores["main"] = VERDE
+colores["main"] = AZUL
 colores["default"] = BLANCO
 
 
@@ -62,13 +62,13 @@ print(AZUL_CLARO)
 model.summary()
 print(BLANCO)
 
-model = MC.compile_model(model)
+model = MC.compile_model(model, regression=True)
 
-dataset_path = os.path.join(parent_folder, "dataset", "dataCUS")
-genetators = MC.get_generators(dataset_path)
+dataset_path = os.path.join(parent_folder, "dataset", "pollosCUS")
+target_size = (640,480,1)
+genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False)
 
-history = MC.fit_model(model, genetators, True)
+history = MC.fit_model(model, genetators, True, regression=True, color=45)
 
 MC.show_plot(history)
 MC.save_model(model, "Struct")
-

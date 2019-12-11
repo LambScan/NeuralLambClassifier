@@ -138,3 +138,5 @@ pollos/
 *.profile-empty
 
 .idea/
+
+dataset/pollosCUS/
