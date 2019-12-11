@@ -39,8 +39,9 @@ class Model_constructor():
         """
             Ctor.
             Elementos necesarios:
+                - parent_folder: ruta absoluta al directorio raiz del proyecto.
                 - model_params: diccionario con los valores de los parametros.
-                - main_color: color destacado de la ejecucion.
+                - exec_color: color de los elementos destacados impresos por pantalla.
         """
         self.ID_MODELO = model_params["id_modelo"]
 
@@ -68,12 +69,20 @@ class Model_constructor():
         #paths
         self.parent_folder = parent_folder
 
+
     def create_model(self):
+        """ Carga un modelo de la lista de modelos predefinidos y lo devuelve. """
         print(self.B + "Usando Modelo " + self.C + str(self.ID_MODELO) + self.B)
         return loadModels(self.ID_MODELO)
 
 
     def compile_model(self, model, regression=False):
+        """
+        Compila un modelo dado.
+
+            - Optimizador usado: Adam
+            - regression: Adapta el optimizador a un problema de regresion
+        """
         if regression:
             adam = keras.optimizers.Adam(lr=self.learning_rate, decay=self.learning_rate / 200)
             model.compile(loss="mean_absolute_percentage_error", optimizer=adam)
@@ -85,6 +94,13 @@ class Model_constructor():
 
 
     def get_generators(self, dataset_path, target_size, data_aumentation=True):
+        """
+        Devuelve un par de generadores de entrenamiento y validacion.
+
+            - dataset_path: ruta absoluta al directorio que contiene el dataset en el formato CUS. (nombreDirectorioCUS)
+            - target_size: tupla de python con el tamaño que se espera que entre en la red. (Ej.: (640,480,1))
+            - data_aumentation: Aumenta el dataset a base de realizar modificaciones. Aumento del 400%
+        """
         #path
         label_numpy_path = os.path.join(dataset_path, "labels.npy")
 
@@ -187,6 +203,19 @@ class Model_constructor():
 
 
     def fit_model(self, model, data_input, use_generators, use_tensorboard=False, regression=False, color=-1):
+        """
+        Entrena el modelo con los datos de entrada, devolviendo la historia del entrenamiento.
+
+            - data_input: datos de entrada.
+                -- SI se usan generadores, esta variable contendra una tupla con los iteradores. (train_iterator, validation_iterator)
+                -- si NO se usan generadores, esta variable contendra una tupla con 4 numpys. (train_images, train_labels, test_images, test_labels)
+            - use_generators: Establece si van a usarse generadores.
+            - use_tensorboard: Establece si va a utilizarse TensorBoard, añadiendo el callback.
+            - regression: Establece si el problema a entrenar es de tipo Regresion.
+            - color: Color de la salida durante el entrenamiento.
+                --   -1  = rainbow
+                -- 0-255 = color equivalente a fg(n)
+        """
         print(self.B
               + "#############################################"
               + self.C + "    Entrenando la red    " + self.B
@@ -285,6 +314,7 @@ class Model_constructor():
 
 
     def show_plot(self, history):
+        """ Musetra por pantalla una grafica con el historial del entrenamiento. """
 
         ent_loss = history.history['loss']
         val_loss = history.history['val_loss']
@@ -313,6 +343,7 @@ class Model_constructor():
 
 
     def save_model(self, model, keyword):
+        """ Guarda el modelo y sus pesos. """
 
         iter_name = keyword
 

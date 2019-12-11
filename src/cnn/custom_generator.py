@@ -12,6 +12,16 @@ class My_Custom_Generator(Sequence):
     """ Custom generator. """
 
     def __init__(self, parent_folder, image_filenames, labels, batch_size, target_size, use_shuffle=True):
+        """
+        Ctor.
+
+            - parent_folder: ruta absoluta al directorio raiz del proyecto
+            - image_filenames: lista con todos los nombres de las imagenes (sin extension, pues esta se añade despues)
+            - labels: etiquetas de las imagenes. Deben estar ordenadas con los nombres de las imagenes.
+            - batch_size: conjunto de datos a devolver en cada llamada al iterador.
+            - target_size: tamaño objetivo de las imagenes a devolver.
+            - use_shuffle: baraja las listas de entrada para aleatorizar los datos. (mantiene el orden entre imagen y etiqueta)
+        """
         if use_shuffle:
             seed = np.random.randint(1000000)
             self.image_filenames = shuffle(image_filenames, random_state=seed)
@@ -36,6 +46,7 @@ class My_Custom_Generator(Sequence):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
 
     def __getitem__(self, idx):
+        """ Iterador. """
         batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
 

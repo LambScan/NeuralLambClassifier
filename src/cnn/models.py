@@ -131,14 +131,14 @@ Red 6:
 Del modelo 12 en adelante los modelos son de regresion
 
 Red 12:
-    - Entrada de (, )
+    - Entrada de (640, 480)
     - Regresion
-    - 495.363  parametros 
-    - ,% val_accuracy:
-         epochs
-        batch_size = 
+    - 4.894.773  parametros 
+    - 100 val_loss: (en una epoca llega a 17, pero se estabiliza en 100)
+        12 epochs
+        batch_size = 1
         learning_rate = 0.00001
-        datos normalizados [0,]
+        datos normalizados [0,1000]
         
 
 
