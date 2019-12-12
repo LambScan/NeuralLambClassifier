@@ -84,7 +84,7 @@ class Model_constructor():
             - regression: Adapta el optimizador a un problema de regresion
         """
         if regression:
-            adam = keras.optimizers.Adam(lr=self.learning_rate, decay=self.learning_rate / 200)
+            adam = keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, amsgrad=True)
             model.compile(loss="mean_absolute_percentage_error", optimizer=adam)
             return model
         else:
@@ -251,15 +251,23 @@ class Model_constructor():
             calls.append(board_call)
 
 
+
+
+        # callback para poder evaluar la red entre epocas
+
         if evaluate_each_epoch:
-            pass
-            """
-            calls.append(keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(color)),
-                                                                  on_epoch_end=lambda e, l: print(fg(248)),
-                                                                  on_batch_begin=None,
-                                                                  on_batch_end=None, on_train_begin=None,
-                                                                  on_train_end=None))
-            """
+            class PredictionCallback(keras.callbacks.Callback):
+                def __init__(self, MC, C, B):
+                    self.MC = MC
+                    self.C = C
+                    self.B = B
+                def on_epoch_end(self, epoch, logs={}):
+                    print("\033[2A" + "\033[108C", end='')
+                    eva = self.MC.evaluate_regression_model(model, val_it, True, True)
+                    print("m: " + self.C + '%.2f' % eva[0] + self.B + "%, d: " +
+                          self.C + '%.2f' % eva[1] + self.B + "%")
+
+            calls.append(PredictionCallback(self, self.C, self.B))
 
         history = []
 
@@ -295,27 +303,43 @@ class Model_constructor():
         return history
 
 
-    def evaluate_regression_model(self, model, validation_data, use_generators=False):
+    def evaluate_regression_model(self, model, validation_data, use_generators=False, is_callback=False):
         """
          Evalua la red contrastando las predicciones que realiza con los datos de validacion de entrada.
 
             - validation_data: datos de validacion. Esta variable se compone de una tupla o generador con las imagenes de
                                 validacion y sus etiquetas. (val_images, val_labels)
 
+            - use_generators: establece el uso de generadores como enbtrada de datos.
+            - is_callback: adapta la salida por pantalla para el uso entre epocas durante el entrenamiento.
+
             = Return: media, desviacion
         """
 
-        val_imgs   = []
         val_labels = []
         preds      = []
+
+
+        bar_length = 30
+        bar_prefix = 'Evaluando red:'
+        bar_suffix = 'Completado '
+        bar_end    = "\r"
+        progress_end = "\n"
+
+        if is_callback:
+            bar_length = 15
+            bar_prefix = 'Validation:'
+            bar_suffix = ''
+            #guardamos la posicion de comienzo del cursor para poder volver a ella imprimiendo bar_end
+            print("\033[s", end='')
+            bar_end    = "\033[u"
+            progress_end = "\033[48C"
+
         if use_generators:
 
-
-
-
-            printProgressBar(0, len(validation_data), prefix='Evaluando red:',
-                             suffix='Completado (' + self.C + str(psutil.virtual_memory()[2]) + self.B + '% RAM)',
-                             length=30, color=self.C)
+            printProgressBar(0, len(validation_data), prefix=bar_prefix,
+                             suffix=bar_suffix+ '(' + self.C + str(psutil.virtual_memory()[2]) + self.B + '% RAM)',
+                             length=bar_length, printEnd=bar_end, color=self.C, print_finish=progress_end)
             i = 0
             for data in validation_data:
                 # separamos datos y etiquetas
@@ -326,9 +350,9 @@ class Model_constructor():
                 val_labels.append(val_lab)
 
                 i = i+1
-                printProgressBar(i, len(validation_data), prefix='Evaluando red:',
-                                 suffix='Completado (' + self.C + str(psutil.virtual_memory()[2]) + self.B + '% RAM)',
-                                 length=30, color=self.C)
+                printProgressBar(i, len(validation_data), prefix=bar_prefix,
+                                 suffix=bar_suffix + '(' + self.C + str(psutil.virtual_memory()[2]) + self.B + '% RAM)',
+                                 length=bar_length, printEnd=bar_end, color=self.C, print_finish=progress_end)
         else:
             # separamos datos y etiquetas
             val_imgs, val_labels = validation_data
@@ -348,7 +372,7 @@ class Model_constructor():
             mean = np.mean(absPercentDiff)
             std = np.std(absPercentDiff)
 
-            return mean, std
+            return round(mean, 2), round(std, 2)
 
 
     def show_plot(self, history, regression=False):
@@ -364,14 +388,14 @@ class Model_constructor():
             fig, axs = plt.subplots(1)
             fig.suptitle('Loss & Accuracy')
 
-            axs[0].set_ylim(top=1)  # MAX_Y_LOSS
+            axs.set_ylim(top=1)  # MAX_Y_LOSS
 
-            axs[0].plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
-            axs[0].plot(Gepochs, val_loss, 'sandybrown', label='Test Loss')
+            axs.plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
+            axs.plot(Gepochs, val_loss, 'sandybrown', label='Test Loss')
 
             plt.xlabel('Epochs')
-            axs[0].xaxis.set_major_locator(MaxNLocator(integer=True))
-            axs[0].legend()
+            axs.xaxis.set_major_locator(MaxNLocator(integer=True))
+            axs.legend()
 
             plt.show()
         else:
@@ -409,7 +433,7 @@ class Model_constructor():
 
         iter_name = keyword
 
-        model_path = os.path.join(self.parent_folder, "modelos")
+        model_path = os.path.join(self.parent_folder, "models")
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         model.save(
@@ -418,3 +442,11 @@ class Model_constructor():
 
 
         print(self.B + "Modelo " + self.C + "Guardado" + self.B + ".\n")
+
+
+    def load_model(self, path):
+        """ Carga un modelo de un fichero dada su ruta absoluta. """
+
+        model = keras.models.load_model(path)
+        print(self.B + "Cargando modelo:\n\n " + self.C + str(path) + self.B + "\n")
+        return model

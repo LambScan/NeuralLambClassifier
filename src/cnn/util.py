@@ -5,7 +5,7 @@ from colored import fg
 
 
 # ------------- PROGRESS BAR  -------------------------------------------------------------------
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", color=118):
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='■', printEnd="\r", color=118, print_finish='\n'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -17,16 +17,17 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        color       - Optional  : progress bar color
     """
     if type(color) == int:
         color = fg(color)
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = color + fill * filledLength + fg(15) + "-" * (length - filledLength)
-    print("\r%s |%s|" % (prefix, bar) + color + "%s" % percent + fg(15) + "%% %s" % suffix, end=printEnd)
+    print("%s |%s|" % (prefix, bar) + color + "%s" % percent + fg(15) + "%% %s" % suffix, end=printEnd)
     # Print New Line on Complete
     if iteration == total:
-        print()
+        print(print_finish, end='')
 
 
 

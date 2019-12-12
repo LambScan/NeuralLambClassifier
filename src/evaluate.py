@@ -3,29 +3,25 @@ from cnn.nn import Model_constructor
 import os
 
 
-VERDE  = fg(118)
-BLANCO = fg(15)
-AZUL   = fg(45)
-AZUL_CLARO = fg(159)
-
-
+nombre_modelo  = "modeloYpesos_pollos_M12_epochs6_batch1.h5"
 nombre_dataset = "pollosCUS"
 target_size = (160,120,1)
 
 
 
 parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+model_path = os.path.join(parent_folder, "models", nombre_modelo)
 
 ################################################       PARAMETROS       ################################################
 
 
-ID_MODELO = 13
+ID_MODELO = 12
 
-epochs = 10
-batch_size = 100  # 1
+epochs = 6
+batch_size = 1  # 2
 
 loading_batch_size = 1
-learning_rate = 0.1  # 0.00001
+learning_rate = 0.00001  # 0.00001
 
 workers = 8  # hilos para el multiprocessing
 RAM_PERCENT_LIMIT = 80  # %
@@ -37,7 +33,8 @@ paciencia = 200
 train_percent = 0.8  # 80%
 
 
-
+BLANCO = fg(15)
+COLOR  = fg(201)
 
 
 ##################################################        Dicc        ##################################################
@@ -53,39 +50,27 @@ parametros["paciencia"] = paciencia
 parametros["train_percent"] = train_percent
 
 colores = {}
-colores["main"] = AZUL
+colores["main"] = COLOR
 colores["default"] = BLANCO
 
 
 
 ##################################################        MAIN        ##################################################
 
-# creamos el modelo
+# cargamos el modelo
 MC = Model_constructor(parent_folder, parametros, colores)
-model = MC.create_model()
-
-print(AZUL_CLARO)
-model.summary()
-print(BLANCO)
-
-# compilamos
-model = MC.compile_model(model, regression=True)
-
+model = MC.load_model(model_path)
 
 # obtenemos los generadores
 dataset_path = os.path.join(parent_folder, "dataset", nombre_dataset)
 genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False)
 
 
-# entrenamos
-history = MC.fit_model(model, genetators, True, regression=True, color=45, evaluate_each_epoch=True)
-
-# Evaluacion final
-print("\n\n" + attr(4) + "Evaluacion final:\n" + attr(0))
+# Evaluacion
 eva = MC.evaluate_regression_model(model, genetators[1], True)
-print("\nmedia: " + colores["main"] + '%.2f' % eva[0] + colores["default"] + "%, desviacion: " + colores["main"] + '%.2f' % eva[1] + colores["default"] + "%")
+print(attr(4) + "Evaluacion final:\n" + attr(0))
+print("media: " + colores["main"] + '%.2f' % eva[0] + colores["default"] + "%, desviacion: " + colores["main"] + '%.2f' % eva[1] + colores["default"] + "%")
 
-# mostramos los resultados
-MC.show_plot(history, True)
-MC.save_model(model, "pollos")
+
+
 

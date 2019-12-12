@@ -14,7 +14,7 @@ dataset_path = os.path.join(parent_folder, "dataset", "pollos")
 dest_path = os.path.join(parent_folder, "dataset", "pollosCUS")
 
 # -------------  PARAMETROS  ------------
-OVERRIDE_MAXVALUE = 3000  # -1 = auto detect
+OVERRIDE_MAXVALUE = 1000  # -1 = auto detect
 
 
 
@@ -34,7 +34,7 @@ printProgressBar(0, len(onlyfiles), prefix='Estructurando dataset:',
 
 #lista para guardar labels
 label_list = []
-a = 0
+
 #para cada .npy
 i = 0
 for fil in onlyfiles:
@@ -42,9 +42,12 @@ for fil in onlyfiles:
     npy = np.load(os.path.join(dataset_path, str(fil)), allow_pickle=True)
     # separamos datos y etiquetas
     img, label = npy
-    a = npy
     # guardamos el label
     label_list.append(label[0]) # todo -> para la regresion de prueba guardamos solo la primera coordenada
+
+    # todo -> resize para agilizar la red
+    escala = 0.25
+    img = cv2.resize(img, None, fx=escala, fy=escala)
 
     #guardamos la imagen
     if not os.path.exists(dest_path):
