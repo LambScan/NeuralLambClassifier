@@ -1,4 +1,4 @@
-from colored import fg
+from colored import fg, attr
 from cnn.nn import Model_constructor
 import os
 
@@ -15,7 +15,7 @@ parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(
 
 ID_MODELO = 12
 
-epochs = 200
+epochs = 20
 batch_size = 1  # 2
 
 loading_batch_size = 1
@@ -54,7 +54,7 @@ colores["default"] = BLANCO
 
 ##################################################        MAIN        ##################################################
 
-
+# creamos el modelo
 MC = Model_constructor(parent_folder, parametros, colores)
 model = MC.create_model()
 
@@ -62,13 +62,25 @@ print(AZUL_CLARO)
 model.summary()
 print(BLANCO)
 
+# compilamos
 model = MC.compile_model(model, regression=True)
 
+
+# obtenemos los generadores
 dataset_path = os.path.join(parent_folder, "dataset", "pollosCUS")
 target_size = (640,480,1)
 genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False)
 
+
+# entrenamos
 history = MC.fit_model(model, genetators, True, regression=True, color=45)
 
+# Evaluacion final
+eva = MC.evaluate_regression_model(model, genetators[1], True)
+print(attr(4) + "Evaluacion final:\n" + attr(0))
+print("media: " + colores["main"] + str(eva[0]) + colores["default"] + "%, desviacion: " + colores["main"] + str(eva[1]) + colores["default"] + "%")
+
+# mostramos los resultados
 MC.show_plot(history)
 MC.save_model(model, "Struct")
+

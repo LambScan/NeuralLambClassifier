@@ -202,7 +202,7 @@ class Model_constructor():
 
 
 
-    def fit_model(self, model, data_input, use_generators, use_tensorboard=False, regression=False, color=-1):
+    def fit_model(self, model, data_input, use_generators, use_tensorboard=False, regression=False, evaluate_each_epoch=False, color=-1):
         """
         Entrena el modelo con los datos de entrada, devolviendo la historia del entrenamiento.
 
@@ -250,6 +250,17 @@ class Model_constructor():
             board_call = keras.callbacks.TensorBoard(log_dir=board_path)
             calls.append(board_call)
 
+
+        if evaluate_each_epoch:
+            pass
+            """
+            calls.append(keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(color)),
+                                                                  on_epoch_end=lambda e, l: print(fg(248)),
+                                                                  on_batch_begin=None,
+                                                                  on_batch_end=None, on_train_begin=None,
+                                                                  on_train_end=None))
+            """
+
         history = []
 
         if use_generators:
@@ -284,62 +295,113 @@ class Model_constructor():
         return history
 
 
-    def evaluate_regression_model(self, model, data_input):
+    def evaluate_regression_model(self, model, validation_data, use_generators=False):
         """
-         todo: esta funcion no funciona si no se le pasa todo el dataset de validacion por parametros,
-         por lo que hay que adaptarla a usar los generadores.
+         Evalua la red contrastando las predicciones que realiza con los datos de validacion de entrada.
+
+            - validation_data: datos de validacion. Esta variable se compone de una tupla o generador con las imagenes de
+                                validacion y sus etiquetas. (val_images, val_labels)
+
+            = Return: media, desviacion
         """
 
-        testImagesX, testY = data_input
-
-        # make predictions on the testing data
-        print("[INFO] predicting...")
-        preds = model.predict(testImagesX)
-
-        # compute the difference between the *predicted* house prices and the
-        # *actual* house prices, then compute the percentage difference and
-        # the absolute percentage difference
-        diff = preds.flatten() - testY
-        percentDiff = (diff / testY) * 100
-        absPercentDiff = np.abs(percentDiff)
-
-        # compute the mean and standard deviation of the absolute percentage
-        # difference
-        mean = np.mean(absPercentDiff)
-        std = np.std(absPercentDiff)
-
-        # finally, show some statistics on our model
-        print("[INFO] mean: {:.2f}%, std: {:.2f}%".format(mean, std))
-        return mean, std
+        val_imgs   = []
+        val_labels = []
+        preds      = []
+        if use_generators:
 
 
-    def show_plot(self, history):
+
+
+            printProgressBar(0, len(validation_data), prefix='Evaluando red:',
+                             suffix='Completado (' + self.C + str(psutil.virtual_memory()[2]) + self.B + '% RAM)',
+                             length=30, color=self.C)
+            i = 0
+            for data in validation_data:
+                # separamos datos y etiquetas
+                val_img, val_lab = data
+
+                # realizamos las predicciones
+                preds.append(model.predict(val_img))
+                val_labels.append(val_lab)
+
+                i = i+1
+                printProgressBar(i, len(validation_data), prefix='Evaluando red:',
+                                 suffix='Completado (' + self.C + str(psutil.virtual_memory()[2]) + self.B + '% RAM)',
+                                 length=30, color=self.C)
+        else:
+            # separamos datos y etiquetas
+            val_imgs, val_labels = validation_data
+
+            # realizamos las predicciones
+            print("Predicting...")
+            preds = model.predict(val_imgs)
+
+
+        if len(preds) > 0:
+            # contrastamos las predicciones con lasetiquetas y calculamos el porcentaje de error
+            diff = np.array(preds).flatten() - val_labels
+            percentDiff = (diff / val_labels) * 100
+            absPercentDiff = np.abs(percentDiff)
+
+            # calculamos la media de error y su desviacion tipica
+            mean = np.mean(absPercentDiff)
+            std = np.std(absPercentDiff)
+
+            return mean, std
+
+
+    def show_plot(self, history, regression=False):
         """ Musetra por pantalla una grafica con el historial del entrenamiento. """
 
-        ent_loss = history.history['loss']
-        val_loss = history.history['val_loss']
-        ent_acc = history.history['accuracy']
-        val_acc = history.history['val_accuracy']
+        if regression:
+            ent_loss = history.history['loss']
+            val_loss = history.history['val_loss']
 
-        Gepochs = range(1, len(ent_loss) + 1)
+            Gepochs = range(1, len(ent_loss) + 1)
 
-        plt.style.use('dark_background')
-        fig, axs = plt.subplots(2)
-        fig.suptitle('Loss & Accuracy')
+            plt.style.use('dark_background')
+            fig, axs = plt.subplots(1)
+            fig.suptitle('Loss & Accuracy')
 
-        axs[0].set_ylim(top=1) # MAX_Y_LOSS
+            axs[0].set_ylim(top=1)  # MAX_Y_LOSS
 
-        axs[0].plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
-        axs[0].plot(Gepochs, val_loss, 'sandybrown', label='Test Loss')
-        axs[1].plot(Gepochs, ent_acc, 'limegreen', label='Training Accuracy')
-        axs[1].plot(Gepochs, val_acc, 'greenyellow', label='Test Accuracy')
-        plt.xlabel('Epochs')
-        axs[0].xaxis.set_major_locator(MaxNLocator(integer=True))
-        axs[1].xaxis.set_major_locator(MaxNLocator(integer=True))
-        axs[0].legend()
-        axs[1].legend()
+            axs[0].plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
+            axs[0].plot(Gepochs, val_loss, 'sandybrown', label='Test Loss')
 
-        plt.show()
+            plt.xlabel('Epochs')
+            axs[0].xaxis.set_major_locator(MaxNLocator(integer=True))
+            axs[0].legend()
+
+            plt.show()
+        else:
+            ent_loss = history.history['loss']
+            val_loss = history.history['val_loss']
+            ent_acc = history.history['accuracy']
+            val_acc = history.history['val_accuracy']
+
+            Gepochs = range(1, len(ent_loss) + 1)
+
+            plt.style.use('dark_background')
+            fig, axs = plt.subplots(2)
+            fig.suptitle('Loss & Accuracy')
+
+            axs[0].set_ylim(top=1) # MAX_Y_LOSS
+
+
+            axs[0].plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
+            axs[0].plot(Gepochs, val_loss, 'sandybrown', label='Test Loss')
+            axs[1].plot(Gepochs, ent_acc, 'limegreen', label='Training Accuracy')
+            axs[1].plot(Gepochs, val_acc, 'greenyellow', label='Test Accuracy')
+
+
+            plt.xlabel('Epochs')
+            axs[0].xaxis.set_major_locator(MaxNLocator(integer=True))
+            axs[1].xaxis.set_major_locator(MaxNLocator(integer=True))
+            axs[0].legend()
+            axs[1].legend()
+
+            plt.show()
 
 
     def save_model(self, model, keyword):
