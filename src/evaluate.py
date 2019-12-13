@@ -66,10 +66,8 @@ dataset_path = os.path.join(parent_folder, "dataset", nombre_dataset)
 genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False)
 
 
-# Evaluacion
-eva = MC.evaluate_regression_model(model, genetators[1], True)
-print(attr(4) + "Evaluacion final:\n" + attr(0))
-print("media: " + colores["main"] + '%.2f' % eva[0] + colores["default"] + "%, desviacion: " + colores["main"] + '%.2f' % eva[1] + colores["default"] + "%")
+# evaluamos la red y mostramos los resultados
+MC.print_final_evaluation(model, genetators[1], num_examples=12)
 
 
 

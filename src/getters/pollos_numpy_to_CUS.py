@@ -42,12 +42,18 @@ for fil in onlyfiles:
     npy = np.load(os.path.join(dataset_path, str(fil)), allow_pickle=True)
     # separamos datos y etiquetas
     img, label = npy
+
+    # todo -> clip a 0 de todas las etiquetas negativas
+    #label = np.clip(np.array(label), 0, None).tolist()
+
     # guardamos el label
     label_list.append(label[0]) # todo -> para la regresion de prueba guardamos solo la primera coordenada
 
     # todo -> resize para agilizar la red
-    escala = 0.25
-    img = cv2.resize(img, None, fx=escala, fy=escala)
+    escala = 0.50
+    img = cv2.resize(img, None, fx=escala, fy=escala, interpolation=cv2.INTER_LANCZOS4)
+
+
 
     #guardamos la imagen
     if not os.path.exists(dest_path):

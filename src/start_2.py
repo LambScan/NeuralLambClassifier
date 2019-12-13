@@ -10,7 +10,7 @@ AZUL_CLARO = fg(159)
 
 
 nombre_dataset = "pollosCUS"
-target_size = (160,120,1)
+target_size = (320, 240, 1)
 
 
 
@@ -21,17 +21,17 @@ parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(
 
 ID_MODELO = 13
 
-epochs = 10
-batch_size = 100  # 1
+epochs = 500
+batch_size = 1  # 1
 
 loading_batch_size = 1
-learning_rate = 0.1  # 0.00001
+learning_rate = 0.00001  # 0.00001
 
 workers = 8  # hilos para el multiprocessing
 RAM_PERCENT_LIMIT = 80  # %
 
 # callbacks
-paciencia = 200
+paciencia = 500
 
 # porcentaje de uso del dataset en entrenamiento (el resto va a la validacion)
 train_percent = 0.8  # 80%
@@ -64,9 +64,11 @@ colores["default"] = BLANCO
 MC = Model_constructor(parent_folder, parametros, colores)
 model = MC.create_model()
 
-print(AZUL_CLARO)
+print(AZUL)
 model.summary()
 print(BLANCO)
+print("#################################################################")
+
 
 # compilamos
 model = MC.compile_model(model, regression=True)
@@ -78,12 +80,10 @@ genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False
 
 
 # entrenamos
-history = MC.fit_model(model, genetators, True, regression=True, color=45, evaluate_each_epoch=True)
+history, model = MC.fit_model(model, genetators, True, regression=True, color=45, evaluate_each_epoch=True, restore_best_weights=True)
 
-# Evaluacion final
-print("\n\n" + attr(4) + "Evaluacion final:\n" + attr(0))
-eva = MC.evaluate_regression_model(model, genetators[1], True)
-print("\nmedia: " + colores["main"] + '%.2f' % eva[0] + colores["default"] + "%, desviacion: " + colores["main"] + '%.2f' % eva[1] + colores["default"] + "%")
+# evaluamos la red y mostramos los resultados
+MC.print_final_evaluation(model, genetators[1], num_examples=12)
 
 # mostramos los resultados
 MC.show_plot(history, True)

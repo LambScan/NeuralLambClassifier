@@ -67,7 +67,7 @@ model = MC.compile_model(model)
 dataset_path = os.path.join(parent_folder, "dataset", "dataCUS")
 genetators = MC.get_generators(dataset_path)
 
-history = MC.fit_model(model, genetators, True)
+history, model = MC.fit_model(model, genetators, True)
 
 MC.show_plot(history)
 MC.save_model(model, "Struct")

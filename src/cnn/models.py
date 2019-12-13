@@ -661,7 +661,7 @@ def M12():
 
     #VGG16 like
 
-    model.add(layers.Conv2D(64, kernel_size=kernel_size_3,input_shape=(160, 120, 1) , activation='relu'))
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, input_shape=(160, 120, 1), activation='relu'))
     model.add(layers.AveragePooling2D(pool_size=pool_size_2))
     model.add(layers.BatchNormalization())
 
@@ -696,26 +696,26 @@ def M13():
 
     #VGG16 like
 
-    model.add(layers.Conv2D(128, kernel_size=kernel_size_3,input_shape=(160, 120, 1) , activation='relu'))
-    model.add(layers.MaxPooling2D(pool_size=pool_size_2))
+    model.add(layers.Conv2D(128, kernel_size=kernel_size_3, input_shape=(320, 240, 1), activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
     model.add(layers.BatchNormalization())
 
-    model.add(layers.Conv2D(128, kernel_size=kernel_size_3, activation='relu'))
-    model.add(layers.MaxPooling2D(pool_size=pool_size_2))
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
     model.add(layers.BatchNormalization())
 
-    model.add(layers.Conv2D(128, kernel_size=kernel_size_3, activation='relu'))
-    model.add(layers.MaxPooling2D(pool_size=pool_size_2))
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
     model.add(layers.BatchNormalization())
 
-    model.add(layers.Conv2D(256, kernel_size=kernel_size_5, activation='relu'))
+    model.add(layers.Conv2D(128, kernel_size=kernel_size_5, activation='relu'))
     model.add(layers.MaxPooling2D(pool_size=pool_size_2))
 
     model.add(layers.Flatten())
-    #model.add(layers.BatchNormalization())
+    # model.add(layers.BatchNormalization())
 
     model.add(layers.Dense(200, activation='relu'))
-    #model.add(layers.Dropout(0.2))
+    # model.add(layers.Dropout(0.5))
     model.add(layers.Dense(1, activation='linear'))
 
     return model

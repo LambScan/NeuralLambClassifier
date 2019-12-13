@@ -69,10 +69,14 @@ class Model_constructor():
         #paths
         self.parent_folder = parent_folder
 
+        # best_score
+        self.last_score = 999999999
+
 
     def create_model(self):
         """ Carga un modelo de la lista de modelos predefinidos y lo devuelve. """
-        print(self.B + "Usando Modelo " + self.C + str(self.ID_MODELO) + self.B)
+        print("#################################################################\n")
+        print(self.B + "Usando Modelo " + self.C + str(self.ID_MODELO) + self.B, end='\n\n')
         return loadModels(self.ID_MODELO)
 
 
@@ -202,7 +206,7 @@ class Model_constructor():
 
 
 
-    def fit_model(self, model, data_input, use_generators, use_tensorboard=False, regression=False, evaluate_each_epoch=False, color=-1):
+    def fit_model(self, model, data_input, use_generators, use_tensorboard=False, regression=False, evaluate_each_epoch=False, color=-1, restore_best_weights=False):
         """
         Entrena el modelo con los datos de entrada, devolviendo la historia del entrenamiento.
 
@@ -252,22 +256,39 @@ class Model_constructor():
 
 
 
-
         # callback para poder evaluar la red entre epocas
-
+        # TODO -> recoger la informacion de la evaluacion para poder representarla mas tarde en una grafica
         if evaluate_each_epoch:
             class PredictionCallback(keras.callbacks.Callback):
-                def __init__(self, MC, C, B):
+                def __init__(self, MC, C, B, restore_best_weights):
                     self.MC = MC
                     self.C = C
                     self.B = B
+                    self.restore_best_weights = restore_best_weights
+
                 def on_epoch_end(self, epoch, logs={}):
                     print("\033[2A" + "\033[108C", end='')
-                    eva = self.MC.evaluate_regression_model(model, val_it, True, True)
-                    print("m: " + self.C + '%.2f' % eva[0] + self.B + "%, d: " +
-                          self.C + '%.2f' % eva[1] + self.B + "%")
+                    eva = self.MC.evaluate_regression_model(model, val_it, use_generators=True, is_callback=True)
+                    print("m: " + self.C + '%.2f' % eva[0] + self.B + ", d: " +
+                          self.C + '%.2f' % eva[1] + self.B + "", end='')
+                    if self.restore_best_weights:
+                        # comprobamos si el score ha mejorado
+                        if self.MC.last_score > eva[0]:
+                            # guardamos el modelo
+                            self.MC.save_model(model, "==TEMP==", is_temp_file=True, quiet=True)
+                            # actualizamos el score
+                            self.MC.last_score = eva[0]
+                            # imprimimos una sutil marca de mejora
+                            print(" *\n")
+                        else:
+                            print("\n")
+                    else:
+                        print("\n")
 
-            calls.append(PredictionCallback(self, self.C, self.B))
+            calls.append(PredictionCallback(self, self.C, self.B, restore_best_weights))
+
+
+
 
         history = []
 
@@ -300,10 +321,22 @@ class Model_constructor():
                                     callbacks = calls,
                                     workers = self.workers)
 
-        return history
 
 
-    def evaluate_regression_model(self, model, validation_data, use_generators=False, is_callback=False):
+        if restore_best_weights:
+            temp_path = os.path.join(self.parent_folder, "models", "==TEMP==.h5")
+            # comprobamos si esta el archivo
+            if os.path.exists(temp_path):
+                # cargamos el modelo
+                model = self.load_model(temp_path, quiet=True)
+                # borramos el archivo
+                os.remove(temp_path)
+
+
+        return history, model
+
+
+    def evaluate_regression_model(self, model, validation_data, use_generators=False, is_callback=False, extended_info=False, num_examples=1):
         """
          Evalua la red contrastando las predicciones que realiza con los datos de validacion de entrada.
 
@@ -312,8 +345,13 @@ class Model_constructor():
 
             - use_generators: establece el uso de generadores como enbtrada de datos.
             - is_callback: adapta la salida por pantalla para el uso entre epocas durante el entrenamiento.
+            - extended_info: devuelve mas info.
+                        - True: (media, desviacion, maximo, minimo, mediana, average, varianza, [num_examples x (true_label, prediction)] )
+                        - False: (media, desviacion_tipica)
 
-            = Return: media, desviacion
+            - num_examples: numero de ejemplos devueltos con la informacion extendida.
+
+            = Return: info
         """
 
         val_labels = []
@@ -363,20 +401,40 @@ class Model_constructor():
 
 
         if len(preds) > 0:
-            # contrastamos las predicciones con lasetiquetas y calculamos el porcentaje de error
+            # contrastamos las predicciones con las etiquetas y calculamos el porcentaje de error
             diff = np.array(preds).flatten() - val_labels
-            percentDiff = (diff / val_labels) * 100
-            absPercentDiff = np.abs(percentDiff)
+            #percentDiff = (diff / val_labels) * 100
+            #absPercentDiff = np.abs(percentDiff)
+            absDiff = np.abs(diff)
 
             # calculamos la media de error y su desviacion tipica
-            mean = np.mean(absPercentDiff)
-            std = np.std(absPercentDiff)
-
-            return round(mean, 2), round(std, 2)
+            mean = np.mean(absDiff)
+            std = np.std(absDiff)
 
 
-    def show_plot(self, history, regression=False):
-        """ Musetra por pantalla una grafica con el historial del entrenamiento. """
+            #establecemos el return
+            ret = [mean, std]
+
+            if extended_info:
+                # añadimos la informacion estadistica extra
+                ret.append(np.amax(absDiff))
+                ret.append(np.amin(absDiff))
+                ret.append(np.median(absDiff))
+                ret.append(np.var(absDiff))
+
+
+                #añadimos los ejemplos
+                indx = np.random.randint(len(validation_data)-num_examples)
+                ret.append([])
+                for i in range(0, num_examples):
+                    ret[-1].append([val_labels[indx + i], preds[indx + i]])
+
+
+            return ret
+
+
+    def show_plot(self, history, regression=False, max_y_value=-1):
+        """ Muestra por pantalla una grafica con el historial del entrenamiento. """
 
         if regression:
             ent_loss = history.history['loss']
@@ -388,7 +446,8 @@ class Model_constructor():
             fig, axs = plt.subplots(1)
             fig.suptitle('Loss & Accuracy')
 
-            axs.set_ylim(top=1)  # MAX_Y_LOSS
+            if max_y_value >= 0:
+                axs.set_ylim(top=max_y_value)  # MAX_Y_LOSS
 
             axs.plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
             axs.plot(Gepochs, val_loss, 'sandybrown', label='Test Loss')
@@ -410,7 +469,8 @@ class Model_constructor():
             fig, axs = plt.subplots(2)
             fig.suptitle('Loss & Accuracy')
 
-            axs[0].set_ylim(top=1) # MAX_Y_LOSS
+            if max_y_value >= 0:
+                axs[0].set_ylim(top=max_y_value) # MAX_Y_LOSS
 
 
             axs[0].plot(Gepochs, ent_loss, 'lightcoral', label='Training Loss')
@@ -428,7 +488,7 @@ class Model_constructor():
             plt.show()
 
 
-    def save_model(self, model, keyword):
+    def save_model(self, model, keyword, is_temp_file=False, quiet=False):
         """ Guarda el modelo y sus pesos. """
 
         iter_name = keyword
@@ -436,17 +496,51 @@ class Model_constructor():
         model_path = os.path.join(self.parent_folder, "models")
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        model.save(
-            model_path + "/" + "modeloYpesos_" + iter_name + "_M" + str(self.ID_MODELO) + "_epochs" + str(self.epochs) + "_batch" + str(
-                self.batch_size) + ".h5")
+        if is_temp_file:
+            model.save(
+                model_path + "/" + keyword + ".h5")
+        else:
+            model.save(
+                model_path + "/" + "modeloYpesos_" + iter_name + "_M" + str(self.ID_MODELO) + "_epochs" + str(self.epochs) + "_batch" + str(
+                    self.batch_size) + ".h5")
+
+        if not quiet:
+            print(self.B + "Modelo " + self.C + "Guardado" + self.B + ".\n")
 
 
-        print(self.B + "Modelo " + self.C + "Guardado" + self.B + ".\n")
-
-
-    def load_model(self, path):
+    def load_model(self, path, quiet=False):
         """ Carga un modelo de un fichero dada su ruta absoluta. """
 
         model = keras.models.load_model(path)
-        print(self.B + "Cargando modelo:\n\n " + self.C + str(path) + self.B + "\n")
+        if not quiet:
+            print(self.B + "Cargando modelo:\n\n " + self.C + str(path) + self.B + "\n")
         return model
+    
+    
+    def print_final_evaluation(self, model, val_gen, num_examples=1):
+        # Evaluacion final
+        print("\n\nEvaluacion final:\n")
+        eva = self.evaluate_regression_model(model, val_gen, use_generators=True, extended_info=True, num_examples=num_examples)
+
+        print()
+        print(" - Media:      " + self.C + '%.2f' % eva[0] + self.B)
+        print(" - Desviacion: " + self.C + '%.2f' % eva[1] + self.B)
+        print(" - Maximo:     " + self.C + '%.2f' % eva[2] + self.B)
+        print(" - Minimo:     " + self.C + '%.2f' % eva[3] + self.B)
+        print(" - Mediana:    " + self.C + '%.2f' % eva[4] + self.B)
+        print(" - Varianza:   " + self.C + '%.2f' % eva[5] + self.B)
+
+
+
+        true_labels = ''
+        preds = ''
+        for par in eva[-1]:
+            true_labels += '%.2f' % par[0] + '\t\t'
+            preds       += '%.2f' % par[1] + '\t\t'
+
+        #quitamos los tabuladores extra
+        true_labels = true_labels[:-2]
+        preds = preds[:-2]
+
+        print("\nEjemplos de prediccion (true/" + self.C + "prediction" + self.B + "):\n" + true_labels + "\n" + self.C + preds + self.B + "\n")
+
