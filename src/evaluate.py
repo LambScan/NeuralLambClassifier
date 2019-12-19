@@ -3,9 +3,9 @@ from cnn.nn import Model_constructor
 import os
 
 
-nombre_modelo  = "modeloYpesos_pollos_M12_epochs6_batch1.h5"
-nombre_dataset = "pollosCUS"
-target_size = (160,120,1)
+nombre_modelo  = "modeloYpesos_pollos_M14_epochs10_batch1.h5"
+nombre_dataset = "lambnnCUS"
+target_size = (230, 510, 1)
 
 
 
@@ -15,7 +15,7 @@ model_path = os.path.join(parent_folder, "models", nombre_modelo)
 ################################################       PARAMETROS       ################################################
 
 
-ID_MODELO = 12
+ID_MODELO = 14
 
 epochs = 6
 batch_size = 1  # 2
@@ -67,7 +67,7 @@ genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False
 
 
 # evaluamos la red y mostramos los resultados
-MC.print_final_evaluation(model, genetators[1], num_examples=12)
+MC.print_final_regress_evaluation(model, genetators[1], num_examples=12)
 
 
 

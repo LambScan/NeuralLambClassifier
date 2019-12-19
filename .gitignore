@@ -139,4 +139,6 @@ pollos/
 
 .idea/
 
-dataset/pollosCUS/
+dataset/
+best/
+models/

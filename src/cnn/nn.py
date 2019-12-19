@@ -139,8 +139,8 @@ class Model_constructor():
         self.num_train = train_img_names.size * (train_it.get_num_transform() + 1)
         self.num_val = val_img_names.size * (val_it.get_num_transform() + 1)
 
-        print(self.B + "Imagenes de entrenamiento " + self.C + str(self.num_train) + self.B)
-        print(self.B + "Imagenes de validacion " + self.C + str(self.num_val) + self.B)
+        print(self.B + "\nImagenes de entrenamiento " + self.C + str(self.num_train) + self.B)
+        print(self.B + "Imagenes de validacion " + self.C + str(self.num_val) + self.B, end='\n\n')
 
         return train_it, val_it
 
@@ -240,11 +240,11 @@ class Model_constructor():
 
         if color == -1:
             calls.append(keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(np.random.randint(130, 232))),
-                                                     on_epoch_end=lambda e, l: print(fg(248)), on_batch_begin=None,
+                                                     on_epoch_end=lambda e, l: print(fg(15)), on_batch_begin=None,
                                                      on_batch_end=None, on_train_begin=None, on_train_end=None))
         elif color >= 0 and color < 256:
             calls.append(keras.callbacks.callbacks.LambdaCallback(on_epoch_begin=lambda e, l: print(fg(color)),
-                                                     on_epoch_end=lambda e, l: print(fg(248)), on_batch_begin=None,
+                                                     on_epoch_end=lambda e, l: print(fg(15)), on_batch_begin=None,
                                                      on_batch_end=None, on_train_begin=None, on_train_end=None))
 
         if use_tensorboard:
@@ -256,36 +256,64 @@ class Model_constructor():
 
 
 
-        # callback para poder evaluar la red entre epocas
+        # callback para poder evaluar la red entre epocas y devolver los mejores pesos
         # TODO -> recoger la informacion de la evaluacion para poder representarla mas tarde en una grafica
-        if evaluate_each_epoch:
-            class PredictionCallback(keras.callbacks.Callback):
-                def __init__(self, MC, C, B, restore_best_weights):
-                    self.MC = MC
-                    self.C = C
-                    self.B = B
-                    self.restore_best_weights = restore_best_weights
 
-                def on_epoch_end(self, epoch, logs={}):
-                    print("\033[2A" + "\033[108C", end='')
-                    eva = self.MC.evaluate_regression_model(model, val_it, use_generators=True, is_callback=True)
-                    print("m: " + self.C + '%.2f' % eva[0] + self.B + ", d: " +
-                          self.C + '%.2f' % eva[1] + self.B + "", end='')
-                    if self.restore_best_weights:
+        if regression:
+            if evaluate_each_epoch:
+                class PredictionCallback(keras.callbacks.Callback):
+                    def __init__(self, MC, C, B, restore_best_weights):
+                        self.MC = MC
+                        self.C = C
+                        self.B = B
+                        self.restore_best_weights = restore_best_weights
+
+                    def on_epoch_end(self, epoch, logs={}):
+                        print("\033[2A" + "\033[108C", end='')
+                        eva = self.MC.evaluate_regression_model(model, val_it, use_generators=True, is_callback=True)
+                        print("m: " + self.C + '%.2f' % eva[0] + self.B + ", d: " +
+                              self.C + '%.2f' % eva[1] + self.B + ", MAX: " +
+                              self.C + '%.2f' % eva[2] + self.B + "", end='')
+                        if self.restore_best_weights:
+                            # comprobamos si el score ha mejorado
+                            if self.MC.last_score > eva[0]:
+                                # guardamos el modelo
+                                self.MC.save_model(model, "==TEMP==", is_temp_file=True, quiet=True)
+                                # actualizamos el score
+                                self.MC.last_score = eva[0]
+                                # imprimimos una sutil marca de mejora
+                                print(" *\n")
+                            else:
+                                print("\n")
+                        else:
+                            print("\n")
+
+                calls.append(PredictionCallback(self, self.C, self.B, restore_best_weights))
+        else:
+            if restore_best_weights:
+                class ClassifRestoreCallback(keras.callbacks.Callback):
+                    def __init__(self, MC, C, B):
+                        self.MC = MC
+                        self.C = C
+                        self.B = B
+                        # puntuacion inicial a 0
+                        self.MC.last_score = 0.0
+
+                    def on_epoch_end(self, epoch, logs={}):
                         # comprobamos si el score ha mejorado
-                        if self.MC.last_score > eva[0]:
+                        if self.MC.last_score < logs["val_accuracy"]:
+                            #posicionado del cursor para imprimir la marca de mejora
+                            print("\033[2A" + "\033[132C", end='')
+
                             # guardamos el modelo
                             self.MC.save_model(model, "==TEMP==", is_temp_file=True, quiet=True)
                             # actualizamos el score
-                            self.MC.last_score = eva[0]
+                            self.MC.last_score = logs["val_accuracy"]
                             # imprimimos una sutil marca de mejora
-                            print(" *\n")
-                        else:
-                            print("\n")
-                    else:
-                        print("\n")
+                            print(" *\n\n")
 
-            calls.append(PredictionCallback(self, self.C, self.B, restore_best_weights))
+
+                calls.append(ClassifRestoreCallback(self, self.C, self.B))
 
 
 
@@ -345,7 +373,7 @@ class Model_constructor():
 
             - use_generators: establece el uso de generadores como enbtrada de datos.
             - is_callback: adapta la salida por pantalla para el uso entre epocas durante el entrenamiento.
-            - extended_info: devuelve mas info.
+            - extended_info: devuelvmie mas info.
                         - True: (media, desviacion, maximo, minimo, mediana, average, varianza, [num_examples x (true_label, prediction)] )
                         - False: (media, desviacion_tipica)
 
@@ -414,10 +442,10 @@ class Model_constructor():
 
             #establecemos el return
             ret = [mean, std]
+            ret.append(np.amax(absDiff))
 
             if extended_info:
                 # añadimos la informacion estadistica extra
-                ret.append(np.amax(absDiff))
                 ret.append(np.amin(absDiff))
                 ret.append(np.median(absDiff))
                 ret.append(np.var(absDiff))
@@ -433,7 +461,7 @@ class Model_constructor():
             return ret
 
 
-    def show_plot(self, history, regression=False, max_y_value=-1):
+    def show_plot(self, history, regression=False, max_y_value=-1, just_save=False, save_name='fig'):
         """ Muestra por pantalla una grafica con el historial del entrenamiento. """
 
         if regression:
@@ -485,7 +513,10 @@ class Model_constructor():
             axs[0].legend()
             axs[1].legend()
 
-            plt.show()
+            if just_save:
+                plt.savefig(save_name + '.svg')
+            else:
+                plt.show()
 
 
     def save_model(self, model, keyword, is_temp_file=False, quiet=False):
@@ -517,7 +548,7 @@ class Model_constructor():
         return model
     
     
-    def print_final_evaluation(self, model, val_gen, num_examples=1):
+    def print_final_regress_evaluation(self, model, val_gen, num_examples=1):
         # Evaluacion final
         print("\n\nEvaluacion final:\n")
         eva = self.evaluate_regression_model(model, val_gen, use_generators=True, extended_info=True, num_examples=num_examples)
@@ -543,4 +574,40 @@ class Model_constructor():
         preds = preds[:-2]
 
         print("\nEjemplos de prediccion (true/" + self.C + "prediction" + self.B + "):\n" + true_labels + "\n" + self.C + preds + self.B + "\n")
+
+
+    def print_final_classif_evaluation(self, model, val_gen, target_size, num_examples=1):
+        # Evaluacion final
+        print("\n\nEvaluacion final:\n")
+        test_loss, test_acc = model.evaluate_generator(val_gen,
+                                    verbose = 1,
+                                    use_multiprocessing = True,
+                                    workers = self.workers)
+
+        # mostramos la informacion de la evaluacion
+        print("\nTest Loss -> " + self.C + str(round(test_loss,4)) + self.B, end='\n\n')
+        print("Test Accuracy -> " + self.C + str(round(test_acc,4)) + self.B, end='\n\n')
+
+
+
+        # obtenemos los ejemplos
+        examples = []
+
+        for i in range(num_examples):
+            img, true_label = val_gen.get_random_pair()
+            pred = model.predict(np.array([img.reshape(target_size)]))
+            pred = [round(x,2) for x in pred[0]] # redondeamos los resultado a dos decimales
+            examples.append([true_label, pred])
+
+
+        # mostramos los ejemplos
+        print("\nEjemplos de prediccion (true  ->  " + self.C + "prediction" + self.B + "):\n")
+        for par in examples:
+            print(str(par[0]) + "   ->   " + self.C + str(par[1]) + self.B)
+
+        print()
+
+
+
+
 

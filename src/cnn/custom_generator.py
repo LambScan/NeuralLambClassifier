@@ -62,3 +62,17 @@ class My_Custom_Generator(Sequence):
                 yRet.append(batch_y[ind])
 
         return np.array(xRet), np.array(yRet)
+
+
+
+    def get_random_pair(self):
+        # random id
+        id = np.random.randint(0, len(self.image_filenames))
+
+        # load image
+        img = cv2.imread(os.path.join(self.parent_folder, str(self.image_filenames[id]) + ".png"), cv2.IMREAD_ANYDEPTH)
+
+        # random pair
+        pair = [img, self.labels[id]]
+
+        return pair

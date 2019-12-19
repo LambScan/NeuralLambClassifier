@@ -721,7 +721,46 @@ def M13():
     return model
 
 
+###################################################################        ###################################################################
+###################################################################   14   ###################################################################
+###################################################################        ###################################################################
+
+def M14():
+    model = models.Sequential()
+
+
+    #VGG16 like
+
+    model.add(layers.Conv2D(200, kernel_size=kernel_size_3,input_shape=(230, 510, 1) , activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_3, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(64, kernel_size=kernel_size_5, activation='relu'))
+    model.add(layers.AveragePooling2D(pool_size=pool_size_2))
+    model.add(layers.BatchNormalization())
+
+    model.add(layers.Conv2D(128, kernel_size=kernel_size_5, activation='relu'))
+    model.add(layers.MaxPooling2D(pool_size=pool_size_2))
+
+    model.add(layers.Flatten())
+
+    model.add(layers.Dense(200, activation='relu'))
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(30, activation='relu'))
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(1, activation='linear'))
+
+    return model
+
 ############################################################   lista de modelos   ############################################################
 
 
-listaFunciones = [M0,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13]
+listaFunciones = [M0,M1,M2,M3,M4,M5,M6,M7,M8,M9,M10,M11,M12,M13,M14]

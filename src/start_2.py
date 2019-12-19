@@ -1,4 +1,4 @@
-from colored import fg, attr
+from colored import fg
 from cnn.nn import Model_constructor
 import os
 
@@ -9,8 +9,8 @@ AZUL   = fg(45)
 AZUL_CLARO = fg(159)
 
 
-nombre_dataset = "pollosCUS"
-target_size = (320, 240, 1)
+nombre_dataset = "lambnnCUS"
+target_size = (230, 510, 1)
 
 
 
@@ -19,9 +19,9 @@ parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(
 ################################################       PARAMETROS       ################################################
 
 
-ID_MODELO = 13
+ID_MODELO = 14
 
-epochs = 500
+epochs = 100
 batch_size = 1  # 1
 
 loading_batch_size = 1
@@ -64,9 +64,9 @@ colores["default"] = BLANCO
 MC = Model_constructor(parent_folder, parametros, colores)
 model = MC.create_model()
 
-print(AZUL)
+print(colores["main"])
 model.summary()
-print(BLANCO)
+print(colores["default"])
 print("#################################################################")
 
 
@@ -83,7 +83,7 @@ genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False
 history, model = MC.fit_model(model, genetators, True, regression=True, color=45, evaluate_each_epoch=True, restore_best_weights=True)
 
 # evaluamos la red y mostramos los resultados
-MC.print_final_evaluation(model, genetators[1], num_examples=12)
+MC.print_final_regress_evaluation(model, genetators[1], num_examples=12)
 
 # mostramos los resultados
 MC.show_plot(history, True)
