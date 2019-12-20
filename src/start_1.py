@@ -19,12 +19,12 @@ parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(
 ################################################       PARAMETROS       ################################################
 
 
-ID_MODELO = 10
+ID_MODELO = 11
 
-epochs = 80
-batch_size = 4  # 1
+epochs = 5
+batch_size = 1  # 1
 
-loading_batch_size = 4
+loading_batch_size = 1
 learning_rate = 0.00001  # 0.00001
 
 workers = 8  # hilos para el multiprocessing
@@ -76,16 +76,24 @@ model = MC.compile_model(model)
 
 # obtenemos los generadores
 dataset_path = os.path.join(parent_folder, "dataset", nombre_dataset)
-genetators = MC.get_generators(dataset_path, target_size, data_aumentation=True)
+genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False)
 
 
 # entrenamos
 history, model = MC.fit_model(model, genetators, use_generators=True, regression=False, color=118, evaluate_each_epoch=False, restore_best_weights=True)
 
 # evaluamos la red y mostramos los resultados
-MC.print_final_classif_evaluation(model, genetators[1], target_size=target_size, num_examples=20)
+MC.print_final_classif_evaluation(model, genetators[1], target_size=target_size, num_examples=100)
 
 # mostramos los resultados
 MC.show_plot(history, regression=False, just_save=True, save_name='lambSM_2')
 MC.save_model(model, "SM2")
 
+
+
+# todo -> comando para que se apague automaticamente al terminar la ejecucion (poner contraseña)
+"""
+sys_pass = ''
+sudo = "echo \"" + sys_pass + "\" | sudo -S "  # es importante que haya un espacio despues de -S
+os.system(sudo + "shutdown 0")
+"""

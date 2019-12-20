@@ -1,4 +1,4 @@
-from colored import fg
+from colored import fg, attr
 import os
 
 
@@ -303,14 +303,14 @@ class Model_constructor():
                         # comprobamos si el score ha mejorado
                         if self.MC.last_score < logs["val_accuracy"]:
                             #posicionado del cursor para imprimir la marca de mejora
-                            print("\033[2A" + "\033[132C", end='')
+                            print("\033[4A" + "\033[11C", end='')
 
                             # guardamos el modelo
                             self.MC.save_model(model, "==TEMP==", is_temp_file=True, quiet=True)
                             # actualizamos el score
                             self.MC.last_score = logs["val_accuracy"]
                             # imprimimos una sutil marca de mejora
-                            print(" *\n\n")
+                            print(" *\n\n\n")
 
 
                 calls.append(ClassifRestoreCallback(self, self.C, self.B))
@@ -578,7 +578,7 @@ class Model_constructor():
 
     def print_final_classif_evaluation(self, model, val_gen, target_size, num_examples=1):
         # Evaluacion final
-        print("\n\nEvaluacion final:\n")
+        print(attr(4) + "\n\nEvaluacion final:" + attr(0), end='\n\n')
         test_loss, test_acc = model.evaluate_generator(val_gen,
                                     verbose = 1,
                                     use_multiprocessing = True,
@@ -601,9 +601,21 @@ class Model_constructor():
 
 
         # mostramos los ejemplos
-        print("\nEjemplos de prediccion (true  ->  " + self.C + "prediction" + self.B + "):\n")
+        print("\n" + attr(4) + "Ejemplos de prediccion:" + attr(0) + "\n")
+        print(attr(0) + " True | isRight |   " + self.C + "Prediction" + self.B + "    " + attr(0))
+        print(attr(4) + " label| ->  " + fg(1) + "->" + self.B + "  |                 " + attr(0))
+
         for par in examples:
-            print(str(par[0]) + "   ->   " + self.C + str(par[1]) + self.B)
+            #obtenemos el indice de los maximos
+            true_idx = np.argmax(par[0])
+            pred_idx = np.argmax(par[1])
+
+            # si los indices son iguales: "->" blanco, si no en rojo
+            if true_idx == pred_idx:
+                print(str(par[0]) + "    ->   " + self.C + str(par[1]) + self.B)
+            else:
+                print(str(par[0]) + fg(1) + "    ->   " + self.C + str(par[1]) + self.B)
+
 
         print()
 

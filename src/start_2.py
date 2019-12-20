@@ -9,8 +9,8 @@ AZUL   = fg(45)
 AZUL_CLARO = fg(159)
 
 
-nombre_dataset = "lambnnCUS"
-target_size = (230, 510, 1)
+nombre_dataset = "pollosCUS"
+target_size = (320, 240, 1)
 
 
 
@@ -19,9 +19,9 @@ parent_folder = os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(
 ################################################       PARAMETROS       ################################################
 
 
-ID_MODELO = 14
+ID_MODELO = 13
 
-epochs = 100
+epochs = 5
 batch_size = 1  # 1
 
 loading_batch_size = 1
@@ -86,6 +86,14 @@ history, model = MC.fit_model(model, genetators, True, regression=True, color=45
 MC.print_final_regress_evaluation(model, genetators[1], num_examples=12)
 
 # mostramos los resultados
-MC.show_plot(history, True)
+MC.show_plot(history, regression=True, just_save=True, save_name='pollos')
 MC.save_model(model, "pollos")
 
+
+
+# todo -> comando para que se apague automaticamente al terminar la ejecucion (poner contraseña)
+"""
+sys_pass = ''
+sudo = "echo \"" + sys_pass + "\" | sudo -S "  # es importante que haya un espacio despues de -S
+os.system(sudo + "shutdown 0")
+"""

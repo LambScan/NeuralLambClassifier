@@ -3,8 +3,8 @@ from cnn.nn import Model_constructor
 import os
 
 
-nombre_modelo  = "modeloYpesos_pollos_M14_epochs10_batch1.h5"
-nombre_dataset = "lambnnCUS"
+nombre_modelo  = "M10_95.5_val_accuracy.h5"
+nombre_dataset = "lambsmCUS"
 target_size = (230, 510, 1)
 
 
@@ -67,7 +67,7 @@ genetators = MC.get_generators(dataset_path, target_size, data_aumentation=False
 
 
 # evaluamos la red y mostramos los resultados
-MC.print_final_regress_evaluation(model, genetators[1], num_examples=12)
+MC.print_final_classif_evaluation(model, genetators[1], target_size=target_size, num_examples=100)
 
 
 
